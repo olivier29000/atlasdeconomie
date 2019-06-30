@@ -3,6 +3,7 @@ package dao;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -11,6 +12,66 @@ import java.util.ResourceBundle;
 import models.Partenariat;
 
 public class PartenariatDao {
+	
+	public List<Partenariat> recupererLesPartenariats(Integer pagination){
+		
+		PreparedStatement preparedStatement = null;
+		ResultSet resultSet = null;
+		List<Partenariat> listeDesPartenariats = new ArrayList<>();
+
+		try {
+			preparedStatement = ConnectionUtils.getInstance()
+					.prepareStatement("select * from partenariats limit " + pagination);
+			resultSet = preparedStatement.executeQuery();
+			ConnectionUtils.doCommit();
+			
+
+			while (resultSet.next()) {
+				
+				Integer locationId = resultSet.getInt("location_id");
+				Integer partenaireId = resultSet.getInt("partner_id");
+				Integer productId = resultSet.getInt("product_id");
+				Integer year = resultSet.getInt("year");
+				Integer exportValue = resultSet.getInt("export_value");
+				Integer importValue = resultSet.getInt("import_value");
+				
+				double SitcEci = resultSet.getDouble("sitc_eci");
+				double SitcCoi = resultSet.getDouble("sitc_coi");
+
+				listeDesPartenariats
+						.add(new Partenariat(locationId, partenaireId, productId, year,
+								exportValue, importValue, SitcEci, SitcCoi));
+			}
+
+			return listeDesPartenariats;
+		} catch (SQLException e) {
+			SERVICE_LOG.error("probleme de selection en base", e);
+			throw new TechnicalException("probleme de selection en base", e);
+
+		} finally {
+			if (resultSet != null) {
+				try {
+					resultSet.close();
+				} catch (SQLException e) {
+					SERVICE_LOG.error("impossible de fermer le resultSet", e);
+					throw new TechnicalException("impossible de fermer le resultSet", e);
+				}
+			}
+			if (preparedStatement != null) {
+				try {
+					preparedStatement.close();
+				} catch (SQLException e) {
+					SERVICE_LOG.error("impossible de fermer le statement", e);
+					throw new TechnicalException("impossible de fermer le statement", e);
+				}
+			}
+			ConnectionUtils.doClose();
+		}
+		
+		return null;
+		
+	}
+	
 	
 	public void insererPartenariats(List<Partenariat> listeDePartenariats) {
 
